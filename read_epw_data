@@ -1,0 +1,43 @@
+import csv
+directory = 'D:\SCHOOL\THESIS\weather_data/erzurum_temperature.csv'
+#directory = 'D:\SCHOOL\THESIS\weather_data/adana_temperature.csv'
+#directory = 'D:\SCHOOL\THESIS\weather_data/izmir_temperature.csv'
+
+def read_csv(directory):
+    with open(directory) as f:
+        reader=csv.reader(f)
+        HDD = []
+        CDD = []
+        for column in reader:
+            if float(column[0]) < 18.0:
+                HDD.append(column)
+            if float(column[0]) > 10.0:
+                CDD.append(column)
+        f.close()
+        print('Heating Degree Day Hours = ',len(HDD))
+        print('Cooling Degree Day Hours = ', len(CDD))
+        if 5000 < len(CDD) :
+            print('Very Hot Humid(1A) Dry(1B), ASHRAE Climate = ', '1A or 1B')
+        elif 3500 < len(CDD) <5000 :
+            print('Hot Humid(2A) Dry(2B), ASHRAE Climate = ', '2A or 2B')
+        elif 2500 < len(CDD) <3500 :
+            print('Warm Humid(3A) Dry(3B), ASHRAE Climate = ', '3A or 3B')
+        elif len(HDD) <= 2000 and len(CDD) <=2500 :
+            print('Warm Marine, ASHRAE Climate = ', '3C')
+        elif len(HDD) <= 3000 and len(CDD) <=2500 :
+            print('Mixed-Humid(4A) Dry(4B), ASHRAE Climate = ', '4A')
+        elif 2000 < len(HDD) <= 3000:
+            print('Mixed Marine, ASHRAE Climate = ', '4C')
+        elif 3000 < len(HDD) <= 4000:
+            print('Cold Humid(5A)-Dry(5B)-Marine(5C), ASHRAE Climate = ', '5A or 5B or 5C')
+        elif 4000 < len(HDD) <= 5000:
+            print('Cold Humid(6A) or Cold Dry(6B), ASHRAE Climate = ', '6A or 6B')
+        elif 5000 < len(HDD) <= 7000:
+            print('Very Cold, ASHRAE Climate = ', '7')
+        elif 7000 < len(HDD):
+            print('Subarctic, ASHRAE Climate = ', '8')
+        else:
+            print('ASHRAE Climate Zone = ', 'None' )
+
+
+read_csv(directory)
