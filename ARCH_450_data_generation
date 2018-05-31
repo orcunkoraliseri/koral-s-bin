@@ -1,0 +1,155 @@
+from __future__ import division
+import linecache
+import re
+import shutil
+import numpy as np
+from SALib.sample import saltelli, latin
+from geomeppy import IDF
+from eppy import modeleditor
+import copy
+import eppy.runner.run_functions as rr
+import os
+from SALib.analyze import morris
+from SALib.sample.morris import sample
+from SALib.plotting.morris import horizontal_bar_plot, covariance_plot, \
+    sample_histograms
+import matplotlib.pyplot as plt
+import time
+import thesis_functions as tf
+import thesis_functions_shadings as tfs
+import pprint
+import thesis_pre_construction as tpc
+import warnings
+import csv
+import random as rd
+
+# Pre-definions####################################
+#############################################
+IDF.setiddname("C:/EnergyPlusV8-8-0/Energy+.idd")  # import idd / idf / epw file to run simulation
+idfname = 'D:/SCHOOL/EENG_572/final/idf/in.idf'
+epwfile = "D:/SCHOOL/EENG_572/final/epw/TUR_Izmir_Izmir_TurTMY.epw"
+#epwfile = "D:/SCHOOL/EENG_572/final/epw/TUR_Ankara_Ankara_TurTMY.epw"
+#epwfile = "D:/SCHOOL/EENG_572/final/epw/TUR_IB_Istanbul-Ataturk.170600_TMYx.2003-2017.epw"
+idf = IDF(idfname, epwfile)
+
+pp = pprint.PrettyPrinter()
+
+np.seterr(divide='ignore', invalid='ignore') # ignore warning
+
+zones = idf.idfobjects['zone'.upper()]  # extract zone area and volume
+zone = zones[0]
+area = modeleditor.zonearea(idf, zone.Name)
+volume = modeleditor.zonevolume(idf, zone.Name)
+height = modeleditor.zone_floor2roofheight(idf,zone.Name)
+
+timestep = idf.idfobjects["TIMESTEP"]                       #to hasten simulation time, timestep from 4 to 1
+timestep[0].Number_of_Timesteps_per_Hour = 1
+
+tfs.removeshadingobject_zone(idf) # remove shading:zone:detailed object
+tfs.removeshadingobject(idf) # remove shading:building:detailed object
+
+tpc.default_material(idf)
+tpc.default_construction(idf)
+
+tf.set_natural_ventilation(idf)
+
+problem = {'num_vars': 10,'names': ['x1', 'x2', 'x3','x4',
+                                    'x5', 'x6', 'x7', 'x8',
+                                    'x9', 'x10', 'x11', 'x12',
+                                    'x13', 'x14', 'x15', 'x16',
+                                    'x17', 'x18'],
+           'bounds': [[0.0, 1.0] * 10]
+           }
+
+param_values = np.random.random_sample((5,10))
+
+length = len(param_values)
+Y = np.zeros(length)
+
+input_list = []
+output_list = []
+###################################################
+###################################################
+
+def params(idf):
+    for i in range(len(param_values)):
+        idf = copy.copy(idf)
+        tf.update_Vertex_x(idf, param_values[i][0] * 4 + 6)                  # decision_variable_1: width of the geometry, vary [6-10]m
+        tf.update_Vertex_y(idf, param_values[i][1] * 2 + 8)                  # decision_variable_2: length of the geometry, vary [6-10]m
+        tf.update_Vertex_z(idf, param_values[i][2] + 3)                      # decision_variable_3: height of the geometry, vary [3-4]m
+        idf.translate_to_origin()
+        idf.set_wwr(wwr_map={0: (param_values[i][3] * 0.95),                 # decision_variable_4: window to wall ratio north, vary [0.0-0.95]
+                             90: (param_values[i][4] * 0.95),                # decision_variable_5: window to wall ratio east, vary [0.0-0.95]
+                             180: (param_values[i][5] * 0.95),               # decision_variable_6: window to wall ratio south, vary [0.0-0.95]
+                             270: (param_values[i][6] * 0.95)})              # decision_variable_7: window to wall ratio west, vary [0.0-0.95]
+        tf.set_u_value_roof_construction(idf, param_values[i][7] * 3.0 + 0.002)     # decision_variable_15: vary [0.0-0.22]
+        tf.set_u_value_floor_construction(idf, param_values[i][8] * 3.0 + 0.002)    # decision_variable_16: vary [0.0-0.38]
+        tf.set_u_value_wall_construction(idf, param_values[i][9] * 3.0 + 0.002)     # decision_variable_17: vary [0.0-1.32]
+        idf.saveas('D:/SCHOOL/EENG_572/final/data/idf_%i.idf' % i)
+        idf = IDF(open('D:/SCHOOL/EENG_572/final/data/idf_%i.idf' % i, 'r'), epwfile)
+        yield ([idf, {'output_directory': 'D:/SCHOOL/EENG_572/final/data/results_%i' % i,
+                      'ep_version': '8-8-0', 'verbose': 'q'}])
+        os.remove("D:/SCHOOL/EENG_572/final/data/idf_%i.idf" % i)
+
+def output_Reading():
+    for i in range(len(param_values)):
+        outputname = ("D:/SCHOOL/EENG_572/final/data/results_%i/eplustbl.htm" % i)
+        line = linecache.getline(outputname, 293)
+        heating_demand_line = re.search(r"<td.*>(.*)<\/td>$", line, re.IGNORECASE)
+        if heating_demand_line:
+            heating_demand = (float(heating_demand_line.group(1).strip()) * 277.778) / area
+        heating_demand = float(str(round(heating_demand, 2)))
+        line_cooling = linecache.getline(outputname, 292)
+        cooling_demand_line = re.search(r"<td.*>(.*)<\/td>$", line_cooling, re.IGNORECASE)
+        if cooling_demand_line:
+            cooling_demand = (float(cooling_demand_line.group(1).strip()) * 277.778) / area
+        cooling_demand = float(str(round(cooling_demand, 2)))
+        total_energy_demand = (cooling_demand + heating_demand)
+        Y[i] = total_energy_demand  # evaluate the model using the generated inputs, saving the model outputs
+        #shutil.rmtree("C:/python/thesis_directory/thesis_results_2/results_%i" % i)
+
+def collecting_data(inp, out):
+    index = []
+    for i in range(len(Y)):
+        out.append(Y[i])
+        index.append(i)
+    for i in range(len(index)):
+        k = index[i]
+        inp.append(param_values[k])
+
+def write_csv_multiple(inp, out):
+    for i in range(10):
+        with open('D:/SCHOOL/EENG_572/final/data/data_%i.csv'% i, 'w', newline='') as f:
+            thewriter = csv.writer(f)
+            thewriter.writerow(['vertex_x','vertex_y','vertex_z','wwr_north',
+                            'wwr_east','wwr_south','wwr_west','u_value_roof',
+                            'u_value_floor','u_value_wall','energy_demand_kWh/sqm'])
+
+            for i in range(50):
+                thewriter.writerow([(inp[i][0]*4 +6),(inp[i][1]*2 + 8), (inp[i][2]+3),
+                                    inp[i][3]*0.95, inp[i][4]*0.95, inp[i][5]*0.95, inp[i][6]*0.95,
+                                    (inp[i][7]*3.0 + 0.002), (inp[i][7]*3.0 + 0.002), (inp[i][7]*3.0 + 0.002),
+                                    out[i]])
+
+def write_csv_input(inp):
+    with open('D:/SCHOOL/EENG_572/final/data/data.csv', 'w', newline='') as f:
+        thewriter = csv.writer(f)
+        thewriter.writerow(['p1','p2','p3','p4', 'p5',
+                            'p6', 'p7', 'p8', 'p9', 'p10'])
+
+        for i in range(len(inp)):
+            thewriter.writerow([inp[i][0],inp[i][1], inp[i][2], inp[i][3], inp[i][4],
+                                inp[i][5], inp[i][6], inp[i][7], inp[i][8], inp[i][9]])
+
+def main():
+    global Si
+    t = time.time()
+    print(param_values)
+    #rr.runIDFs(params(idf), processors=6)
+    #output_Reading()
+    print('done in:', ((time.time() - t)/3600))
+    #collecting_data(input_list,output_list)
+    #write_csv_multiple(input_list,output_list)
+
+if __name__ == '__main__':
+    main()
