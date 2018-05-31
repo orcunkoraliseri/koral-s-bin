@@ -1,0 +1,443 @@
+from geomeppy import IDF
+
+IDF.setiddname("C:/EnergyPlusV8-8-0/Energy+.idd")           # import idd / idf / epw file to run simulation
+idfname = 'C:/Users/orcun/Desktop/eppy/E_eppy05_WWR_shading/OpenStudio/E_eppy05_WWR_shading/ModelToIdf/in.idf'
+epwfile = "C:/Users/orcun/Desktop/eppy/E_eppy02_WWR/OpenStudio/E_eppy02_WWR/ModelToIdf/TUR_Izmir_Izmir_TurTMY.epw"
+idf = IDF(idfname, epwfile)
+
+'''
+    DEFAULTS
+    Construction is arranged according to ASHRAE_2005_HOF_Materials
+    Construction is arranged as Light Construction
+    Construction is arranged as Medium Construction
+    Construction is arranged as Heavy Construction
+    
+    heat transfer by transmission from building envelope
+    for insulation material density will change
+    for insulation material thickness will change
+'''
+
+'''
+    NEW FUCNTION FOR CONSTRUCTION TYPE SELECTION 
+    ACCORDING TO CLIMATE SELECTION
+'''
+
+'''
+    layer 1: 
+        I02 50mm insulation board = INS_MAT_WALL
+    layer 2:
+        G01a 19mm gypsum board = INS_MAT_WALL2
+'''
+
+'''
+    ask about each time importing idfname or epw file
+    ask about generic path for all path files
+    for run function do not delete eplusout.err
+
+'''
+
+def mat_remove(idf):
+    '''Remove all materials
+    Execute the method each time if climate or building function changes
+    :param idf: Get material properties from the IDF
+    '''
+    for s in range(len(idf.idfobjects['Material'.upper()])):
+        idf.removeidfobject(idf.idfobjects['Material'.upper()][0])
+    for s in range(len(idf.idfobjects['Material:AirGap'.upper()])):
+        idf.removeidfobject(idf.idfobjects['Material:AirGap'.upper()][0])
+
+def wmat_remove(idf):
+    '''Remove all window and window related materials
+    Execute the method each time for each model
+    :param idf: Get material properties from the IDF
+    '''
+    for s in range(len(idf.idfobjects['WindowMaterial:Glazing'.upper()])):
+        idf.removeidfobject(idf.idfobjects['WindowMaterial:Glazing'.upper()][0])
+    for s in range(len(idf.idfobjects['WindowMaterial:Gas'.upper()])):
+        idf.removeidfobject(idf.idfobjects['WindowMaterial:Gas'.upper()][0])
+
+def cons_remove(idf):
+    '''Remove all constructions
+    Execute the method each time if climate or building function changes
+    :param idf: Get material properties from the IDF
+    '''
+    for s in range(len(idf.idfobjects['Construction'.upper()])):
+        idf.removeidfobject(idf.idfobjects['Construction'.upper()][0])
+
+def def_mat_med(idf):
+    '''Apply default medium construction materials
+    ASHRAE : 2A-2B, 3A-3B-3C, 4A-4B-4C
+    floor construction concrete divided from roof construction concrete
+    :param idf: Get material properties from the IDF
+    '''
+    idf.newidfobject(
+        'Material:AirGap'.upper(),
+        Name='F05 Ceiling air space resistance',
+        Thermal_Resistance=0.18
+    )
+    idf.newidfobject(
+        'Material:AirGap'.upper(),
+        Name='F04 Wall air space resistance',
+        Thermal_Resistance=0.15
+    )
+    idf.newidfobject(
+        'Material'.upper(),
+        Name='M11 100mm heavyweight concrete',
+        Roughness='MediumRough',
+        Thickness=0.1016,
+        Conductivity=0.53,
+        Density=1280,
+        Specific_Heat=840
+    )
+    idf.newidfobject(
+        'Material'.upper(),
+        Name='M14a 100mm heavyweight concrete',
+        Roughness='MediumRough',
+        Thickness=0.1016,
+        Conductivity=1.95,
+        Density=2240,
+        Specific_Heat=900
+    )
+    idf.newidfobject(
+        'Material'.upper(),
+        Name='F16 Acoustic Tile',
+        Roughness='MediumSmooth',
+        Thickness=0.0191,
+        Conductivity=0.06,
+        Density=368,
+        Specific_Heat=590
+    )
+    idf.newidfobject(
+        'Material'.upper(),
+        Name='M01 100mm brick',
+        Roughness='MediumRough',
+        Thickness=0.1016,
+        Conductivity=0.89,
+        Density=1920,
+        Specific_Heat=790
+    )
+    idf.newidfobject(
+        'Material'.upper(),
+        Name='I02 50mm insulation board',
+        Roughness='MediumRough',
+        Thickness=0.0508,
+        Conductivity=0.03,
+        Density=43,
+        Specific_Heat=1210
+    )
+    idf.newidfobject(
+        'Material'.upper(),
+        Name='G01a 19mm gypsum board',
+        Roughness='MediumSmooth',
+        Thickness=0.019,
+        Conductivity=0.16,
+        Density=800,
+        Specific_Heat=1090
+    )
+
+def def_mat_heavy(idf):
+    '''Apply default medium construction materials
+    ASHRAE : 2A-2B, 3A-3B-3C, 4A-4B-4C
+    floor construction concrete divided from roof construction concrete
+    :param idf: Get material properties from the IDF
+    '''
+    idf.newidfobject(
+        'Material:AirGap'.upper(),
+        Name='F05 Ceiling air space resistance',
+        Thermal_Resistance=0.18
+    )
+    idf.newidfobject(
+        'Material:AirGap'.upper(),
+        Name='F04 Wall air space resistance',
+        Thermal_Resistance=0.15
+    )
+    idf.newidfobject(
+        'Material'.upper(),
+        Name='M11 100mm heavyweight concrete',
+        Roughness='MediumRough',
+        Thickness=0.1016,
+        Conductivity=0.53,
+        Density=1280,
+        Specific_Heat=840
+    )
+    idf.newidfobject(
+        'Material'.upper(),
+        Name='M15 200mm heavyweight concrete',
+        Roughness='MediumRough',
+        Thickness=0.2032,
+        Conductivity=1.95,
+        Density=2240,
+        Specific_Heat=900
+    )
+    idf.newidfobject(
+        'Material'.upper(),
+        Name='F16 Acoustic Tile',
+        Roughness='MediumSmooth',
+        Thickness=0.0191,
+        Conductivity=0.06,
+        Density=368,
+        Specific_Heat=590
+    )
+    idf.newidfobject(
+        'Material'.upper(),
+        Name='M01 100mm brick',
+        Roughness='MediumRough',
+        Thickness=0.1016,
+        Conductivity=0.89,
+        Density=1920,
+        Specific_Heat=790
+    )
+    idf.newidfobject(
+        'Material'.upper(),
+        Name='M05 200mm concrete block',
+        Roughness='MediumRough',
+        Thickness=0.2032,
+        Conductivity=1.11,
+        Density=800,
+        Specific_Heat=920
+    )
+    idf.newidfobject(
+        'Material'.upper(),
+        Name='I02 50mm insulation board',
+        Roughness='MediumRough',
+        Thickness=0.0508,
+        Conductivity=0.03,
+        Density=43,
+        Specific_Heat=1210
+    )
+    idf.newidfobject(
+        'Material'.upper(),
+        Name='G01a 19mm gypsum board',
+        Roughness='MediumSmooth',
+        Thickness=0.019,
+        Conductivity=0.16,
+        Density=800,
+        Specific_Heat=1090
+    )
+
+def wmat(idf):
+    '''Default window and window related materials
+    Execute this function for each model
+    ASHRAE : 2A-2B, 3A-3B-3C, 4A-4B-4C, 5A-5B-5C, 6A-6B, 7
+    :param idf: Get material properties from the IDF
+    '''
+    idf.newidfobject(
+        'WindowMaterial:Glazing'.upper(),
+        Name = 'Clear 3mm',
+        Optical_Data_Type = 'SpectralAverage',
+        Window_Glass_Spectral_Data_Set_Name = '',
+        Thickness= 0.03,
+        Solar_Transmittance_at_Normal_Incidence = 0.837,
+        Front_Side_Solar_Reflectance_at_Normal_Incidence = 0.075,
+        Back_Side_Solar_Reflectance_at_Normal_Incidence=0.075,
+        Visible_Transmittance_at_Normal_Incidence = 0.898,
+        Front_Side_Visible_Reflectance_at_Normal_Incidence = 0.081,
+        Back_Side_Visible_Reflectance_at_Normal_Incidence=0.081,
+        Infrared_Transmittance_at_Normal_Incidence = 0.0,
+        Front_Side_Infrared_Hemispherical_Emissivity = 0.84,
+        Back_Side_Infrared_Hemispherical_Emissivity=0.84,
+        Conductivity = 0.9
+    )
+    idf.newidfobject(
+        'WindowMaterial:Gas'.upper(),
+        Name= 'AIR 13MM',
+        Gas_Type= 'Air',
+        Thickness= 0.0127
+    )
+
+
+def def_const_med_two(idf):
+    '''Apply default medium constructions two layer insulations
+    ASHRAE : 2A-2B, 3A-3B-3C, 4A-4B-4C
+    :param idf: Get material properties from the IDF
+    '''
+    idf.newidfobject(
+        'Construction'.upper(),
+        'Exterior Window',
+        Outside_Layer='Clear 3mm',
+        Layer_2='Air 13mm',
+        Layer_3='Clear 3mm'
+    )
+    idf.newidfobject(
+        'Construction'.upper(),
+        Name='Exterior Roof',
+        Outside_Layer='M14a 100mm heavyweight concrete',
+        Layer_2='F05 Ceiling air space resistance',
+        Layer_3='F16 Acoustic tile',
+    )
+    idf.newidfobject(
+        'Construction'.upper(),
+        Name='Exterior Wall',
+        Outside_Layer='M01 100mm brick',
+        Layer_2='I02 50mm insulation board',
+        Layer_3='F04 Wall air space resistance',
+        Layer_4='G01a 19mm gypsum board',
+    )
+    idf.newidfobject(
+        'Construction'.upper(),
+        Name='Interior Floor',
+        Outside_Layer='F16 Acoustic tile',
+        Layer_2='F05 Ceiling air space resistance',
+        Layer_3='M11 100mm heavyweight concrete',
+    )
+    idf.newidfobject(
+        'Construction'.upper(),
+        Name='Partitions',
+        Outside_Layer='G01a 19mm gypsum board',
+        Layer_2='F04 Wall air space resistance',
+        Layer_3='G01a 19mm gypsum board',
+    )
+
+def def_const_med_one(idf):
+    '''Apply default medium constructions two layer insulations
+    ASHRAE : 2A-2B, 3A-3B-3C, 4A-4B-4C
+    :param idf: Get material properties from the IDF
+    '''
+    idf.newidfobject(
+        'Construction'.upper(),
+        'Exterior Window',
+        Outside_Layer='Clear 3mm',
+        Layer_2='Air 13mm',
+        Layer_3='Clear 3mm'
+    )
+    idf.newidfobject(
+        'Construction'.upper(),
+        Name='Exterior Roof',
+        Outside_Layer='M14a 100mm heavyweight concrete',
+        Layer_2='F05 Ceiling air space resistance',
+        Layer_3='F16 Acoustic tile',
+    )
+    idf.newidfobject(
+        'Construction'.upper(),
+        Name='Exterior Wall',
+        Outside_Layer='M01 100mm brick',
+        Layer_2='F04 Wall air space resistance',
+        Layer_3='I02 50mm insulation board',
+    )
+    idf.newidfobject(
+        'Construction'.upper(),
+        Name='Interior Floor',
+        Outside_Layer='F16 Acoustic tile',
+        Layer_2='F05 Ceiling air space resistance',
+        Layer_3='M11 100mm heavyweight concrete',
+    )
+    idf.newidfobject(
+        'Construction'.upper(),
+        Name='Partitions',
+        Outside_Layer='G01a 19mm gypsum board',
+        Layer_2='F04 Wall air space resistance',
+        Layer_3='G01a 19mm gypsum board',
+    )
+
+def def_const_heavy_two(idf):
+    '''Apply default medium constructions two layer insulations
+    ASHRAE: 5A-5B-5C, 6A-6B, 7
+    :param idf: Get material properties from the IDF
+    '''
+    idf.newidfobject(
+        'Construction'.upper(),
+        'Exterior Window',
+        Outside_Layer='Clear 3mm',
+        Layer_2='Air 13mm',
+        Layer_3='Clear 3mm'
+    )
+    idf.newidfobject(
+        'Construction'.upper(),
+        Name='Exterior Roof',
+        Outside_Layer='M15 200mm heavyweight concrete',
+        Layer_2='F05 Ceiling air space resistance',
+        Layer_3='F16 Acoustic tile',
+    )
+    idf.newidfobject(
+        'Construction'.upper(),
+        Name='Exterior Wall',
+        Outside_Layer='M01 100mm brick',
+        Layer_2='M15 200mm heavyweight concrete',
+        Layer_3='I02 50mm insulation board',
+        Layer_4='F04 Wall air space resistance',
+        Layer_5='G01a 19mm gypsum board',
+    )
+    idf.newidfobject(
+        'Construction'.upper(),
+        Name='Interior Floor',
+        Outside_Layer='F16 Acoustic tile',
+        Layer_2='F05 Ceiling air space resistance',
+        Layer_3='M15 200mm heavyweight concrete',
+    )
+    idf.newidfobject(
+        'Construction'.upper(),
+        Name='Partitions',
+        Outside_Layer='G01a 19mm gypsum board',
+        Layer_2='M05 200mm concrete block',
+        Layer_3='G01a 19mm gypsum board',
+    )
+
+def def_const_heavy_one(idf):
+    '''Apply default medium constructions two layer insulations
+    ASHRAE: 5A-5B-5C, 6A-6B, 7
+    :param idf: Get material properties from the IDF
+    '''
+    idf.newidfobject(
+        'Construction'.upper(),
+        'Exterior Window',
+        Outside_Layer='Clear 3mm',
+        Layer_2='Air 13mm',
+        Layer_3='Clear 3mm'
+    )
+    idf.newidfobject(
+        'Construction'.upper(),
+        Name='Exterior Roof',
+        Outside_Layer='M15 200mm heavyweight concrete',
+        Layer_2='F05 Ceiling air space resistance',
+        Layer_3='F16 Acoustic tile',
+    )
+    idf.newidfobject(
+        'Construction'.upper(),
+        Name='Exterior Wall',
+        Outside_Layer='M01 100mm brick',
+        Layer_2='M15 200mm heavyweight concrete',
+        Layer_3='F04 Wall air space resistance',
+        Layer_4='I02 50mm insulation board',
+    )
+    idf.newidfobject(
+        'Construction'.upper(),
+        Name='Interior Floor',
+        Outside_Layer='F16 Acoustic tile',
+        Layer_2='F05 Ceiling air space resistance',
+        Layer_3='M15 200mm heavyweight concrete',
+    )
+    idf.newidfobject(
+        'Construction'.upper(),
+        Name='Partitions',
+        Outside_Layer='G01a 19mm gypsum board',
+        Layer_2='M05 200mm concrete block',
+        Layer_3='G01a 19mm gypsum board',
+    )
+
+########################################################
+########################################################
+
+'''
+    VARIABLES
+    according to insulation material selection
+'''
+
+def ins_thick(idf,thick):
+    '''Thickness insulation
+    ins_thick: thickness insulation
+    :param idf: Get material properties from the IDF
+    :param thick: thickness value
+    '''
+    for i in idf.idfobjects['Material'.upper()]:
+        if i.Name == 'SPECIFIC_MAT_NAME':
+            i['obj'][3] = thick
+
+def ins_dense(idf,dense):
+    '''Density insulation
+    ins_thick: density insulation
+    :param idf: Get material properties from the IDF
+    :param dense: density value
+    '''
+    for i in idf.idfobjects['Material'.upper()]:
+        if i.Name == 'SPECIFIC_MAT_NAME':
+            i['obj'][5] = dense
