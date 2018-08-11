@@ -1,0 +1,24 @@
+import linecache
+import re
+import json
+from pprint import pprint
+import itertools
+
+outputname = ("C:/Users/orcun/Desktop/aa/dortluk.json")
+
+# read and append list json
+data = []
+origin = []
+destination = []
+with open(outputname) as f:
+    i = 0
+    for line in f:
+        data.append(json.loads(line))
+        ori = data[i]["origin"]
+        origin.append((json.loads(ori)))
+        des = data[i]["destination"]
+        destination.append((json.loads(des)))
+        i = i + 1
+
+print("origin:", origin)
+print("destination:", destination)
