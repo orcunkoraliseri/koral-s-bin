@@ -1,0 +1,64 @@
+# link = http://www.veridefteri.com/2018/08/29/bilimsel-programlamaya-kolay-baslangic-1/
+
+# formula displacement: h(t) = h(t0) - 1/2gt^^2
+# formula speed: v(t) = v(t0) - gt
+# g = 9.81 m/s^^2
+
+import matplotlib.pyplot as plt
+
+gWorld = 9.81 # m/s^^2
+gMoon = 1.625 # m/s^^2
+tLast = 10 # finish time (s)
+tStep = 0.5 # step size (s)
+
+# start time, height, speed
+t0 = 0
+h0 = 0
+v0 = 0
+
+# time, height, speed list
+tList = []
+hList = []
+vList = []
+hListMoon = []
+vListMoon = []
+
+# formulas
+h = lambda t, h0=0, g=gWorld: h0 + (-1/2 * g * t**2) # h(t) = h_0 - 1/2gt^^2
+v = lambda t, vy0=0, g=gWorld: vy0 + (-g*t) # v(t) = v_0 - gt
+
+t = t0
+
+while t <= tLast:
+    hList.append(h(t, h0, gWorld))
+    vList.append(v(t, v0, gWorld))
+
+    hListMoon.append(h(t, h0, gMoon))
+    vListMoon.append(v(t, v0, gMoon))
+
+    tList.append(t)
+
+    t += tStep
+
+print(tList[:3])
+print(hList[:3])
+print(vList[:3])
+
+# graphic delta_h
+plt.subplot(211)
+plt.plot(tList, hList, label='World')
+plt.plot(tList, hListMoon, label='Moon')
+plt.title(r"delta_h ($ h = \frac{1}{2} g t^2 $)")
+plt.xlabel('time (s)')
+plt.ylabel('h (m)')
+plt.legend(loc=3)
+
+# graphic delta_v
+plt.subplot(212)
+plt.plot(tList, vList, label='World')
+plt.plot(tList, vListMoon, label='Moon')
+plt.title(r'delta_v ($ v = -gt $)')
+plt.xlabel('time (s)')
+plt.ylabel('h (m)')
+plt.legend(loc=3)
+plt.show()
