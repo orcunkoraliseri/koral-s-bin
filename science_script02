@@ -1,0 +1,88 @@
+# link = http://www.veridefteri.com/2018/09/03/bilimsel-programlamaya-kolay-baslangic-2/
+
+# formula displacement: h(t) = h(t0) - 1/2gt^^2
+# formula speed: v(t) = v(t0) - gt
+# g = 9.81 m/s^^2
+
+'''
+projectile motion
+
+- delta for displacement
+delta r of x-axis: rx(t) = rx(0) + vx(0)t
+delta r of y-axis: ry(y) = ry(0) -1/2gt^^2
+
+- speed alteration
+delta v of x-axis: vx(t) = vx(0)
+delta v of y-axis: vy(t) = vy(0) - gt
+
+parameters:
+rx(t), ry(t) = location vector (m)
+vx(t), vy(t) = speed vector (m/s)
+g = 9.81 m/s^^2
+t = time (s)
+'''
+
+import matplotlib.pyplot as plt
+import math as m
+
+gWorld = 9.81  # m/s^^2
+
+class TimePositionSpeed:
+    'vectors of time, 2d position and 2d speed values'
+    t = 0
+    rx, ry = 0, 0
+    vx, vy = 0, 0
+
+    def __init__(self, t0, rx0, ry0, vx0, vy0):
+        self.t = t0
+        self.rx = rx0
+        self.ry = ry0
+        self.vx = vx0
+        self.vy = vy0
+
+def tTimePositionSpeed(t, pvt0, g=gWorld):
+    'returns for t time new Position and speed'
+    tNew= pvt0.t + t
+    rxNew = pvt0.rx + pvt0.vx * t
+    ryNew = pvt0.ry + pvt0.vy * t + (-1/2 * g * t**2)
+    vxNew = pvt0.vx
+    vyNew = pvt0.vy + (-g) * t
+    return TimePositionSpeed(tNew, rxNew, ryNew, vxNew, vyNew)
+
+t0 = 0
+tLast = 100
+tStep = 0.5
+v0 = 100
+AltitudeAngle = 40
+# start position and speed
+pvt0 = TimePositionSpeed(t0, 0, 0, v0 * m.cos(m.radians(AltitudeAngle)),
+                         v0*m.sin(m.radians(AltitudeAngle)))
+pvtList = [] # list for vector of time, altitude and speed
+
+# start the process
+t = pvt0.t
+h = pvt0.ry
+while t <= tLast and h>=0:
+    pvtList.append(tTimePositionSpeed(t,pvt0))
+    h = pvtList[-1].ry
+    t += tStep
+
+# plotting for displacement
+plt.plot([pvt.rx for pvt in pvtList], [pvt.ry for pvt in pvtList])
+
+plt.title('displacement')
+plt.xlabel('x-axis')
+plt.ylabel('y-axis')
+
+plt.show()
+
+# plotting for speed
+plt.plot( [pvt.vx for pvt in pvtList], [pvt.vy for pvt in pvtList])
+
+plt.title("speed")
+plt.xlabel("x-axis (m/s)")
+plt.ylabel('y-axis(m/s)')
+
+plt.show()
+
+
